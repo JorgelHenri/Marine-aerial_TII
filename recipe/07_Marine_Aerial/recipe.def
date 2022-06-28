@@ -1,0 +1,103 @@
+Bootstrap: docker
+# Bootstrap: docker-daemon
+From: ctumrs/mrs_uav_system_ls_modules:latest
+
+%post
+    apt-get -y update
+
+    apt-get -y install zsh
+
+    MRS_LOCATION=/opt/mrs
+
+
+    # link configuration file for the MRS env
+    ln -s $MRS_LOCATION/host/99-mrs_env.sh /.singularity.d/env/99-mrs_env.sh
+
+    # link configuration file for the linux-setup env
+    ln -s $MRS_LOCATION/host/99-linux_setup_env.sh /.singularity.d/env/99-linux_setup_env.sh
+
+    # EXAMPLE OF THE CUSTOMIZATION
+    # install visual studio code
+    # takeon from https://code.visualstudio.com/docs/setup/linux
+    cd /tmp
+    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+    install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+    sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+    rm -f packages.microsoft.gpg
+
+    sudo apt-get -y install apt-transport-https
+    sudo apt-get -y update
+    sudo apt-get -y install code # or code-insiders
+
+    # install sublimetext
+    # taken from https://www.sublimetext.com/docs/linux_repositories.html
+    wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
+    sudo apt-get -y install apt-transport-https
+    echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
+    sudo apt-get -y update
+    sudo apt-get -y install sublime-text
+
+    # instal TII marine
+
+    # Set Ubuntu release
+      RELEASE=focal
+
+    # Set ROS distribution
+      DIST=noetic
+
+    # Set Gazebo version
+      GAZ=gazebo11
+
+    sudo apt update && apt install -y tree
+
+    sudo apt install -y ros-noetic-joint-state-publisher-gui
+
+
+    # asv_wave_sim
+    sudo apt install -y libcgal-dev fftw-dev libfftw3-dev libclfft-dev python3-catkin-tools
+
+    # python_coverage_planning
+    sudo apt install -y libgmp-dev libmpfr-dev
+    sudo apt install -y mono-devel
+    sudo apt install -y libgoogle-glog-dev
+
+    sudo pip3 install scipy
+
+    sudo pip install pymap3d
+
+    sudo pip install casadi
+
+    sudo pip install ruamel.yaml
+
+    sudo sudo apt install -y texlive-xetex texlive-fonts-recommended texlive-plain-generic
+
+    sudo sudo apt install -y jupyter-nbconvert
+
+    # Cola2 lib
+    # installed from /home/tii/dev because
+    # workspace/src symlink can't be followed from
+    # inside the Dockerfile
+    sudo mkdir $MRS_LOCATION/cola && cd $MRS_LOCATION/cola && \
+        git clone https://bitbucket.org/iquarobotics/cola2_lib.git && \
+        cd cola2_lib && \
+        mkdir build && cd build && \
+        cmake .. && \
+        make && \
+        sudo make install  
+
+
+    ### USER INSTALL PART END
+
+%environment
+    export LC_ALL=C
+
+%runscript
+  CMD="${@}"
+
+  if [ -z "${CMD}" ]; then
+    /bin/bash --login
+  else
+    /bin/bash --login -c "${CMD}"
+  fi
+
+  exit 0
